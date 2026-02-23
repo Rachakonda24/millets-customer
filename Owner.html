@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Millets Enterprise - Owner Dashboard</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#f4f6f9;
+}
+
+/* LOGIN PAGE */
+#loginPage{
+    display:flex;
+    height:100vh;
+    justify-content:center;
+    align-items:center;
+    background:#1b5e20;
+}
+
+.login-box{
+    background:white;
+    padding:30px;
+    width:320px;
+    border-radius:8px;
+    text-align:center;
+}
+
+.login-box input{
+    width:95%;
+    padding:8px;
+    margin:8px 0;
+}
+
+.login-box button{
+    background:#1b5e20;
+    color:white;
+    border:none;
+    padding:10px;
+    width:100%;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+/* MAIN DASHBOARD */
+#mainDashboard{
+    display:none;
+}
+
+/* HEADER */
+.header{
+    background:#1b5e20;
+    color:white;
+    padding:15px 30px;
+    font-size:22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+}
+
+.logo img{
+    width:50px;
+    height:50px;
+    margin-right:12px;
+}
+
+.header button{
+    background:white;
+    color:#1b5e20;
+    border:none;
+    padding:8px 12px;
+    border-radius:5px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.container{
+    padding:30px;
+}
+
+.summary{
+    background:white;
+    padding:20px;
+    border-radius:8px;
+    margin-bottom:25px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+    font-size:18px;
+    font-weight:bold;
+    color:#1b5e20;
+}
+
+.card{
+    background:white;
+    margin-bottom:25px;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+.card h3{
+    margin-top:0;
+    color:#2e7d32;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+}
+
+th{
+    background:#2e7d32;
+    color:white;
+    padding:10px;
+}
+
+td{
+    padding:10px;
+    border:1px solid #ddd;
+    text-align:center;
+}
+
+.status{
+    font-weight:bold;
+}
+
+.pending{ color:orange; }
+.accepted{ color:blue; }
+.shipped{ color:#6a1b9a; }
+.delivered{ color:green; }
+
+select{
+    padding:6px;
+    border-radius:4px;
+}
+
+.date-input{
+    margin-top:5px;
+}
+
+.total{
+    margin-top:10px;
+    font-weight:bold;
+    text-align:right;
+    color:#1b5e20;
+}
+
+.no-data{
+    text-align:center;
+    font-size:20px;
+    margin-top:100px;
+    color:#777;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+    <div class="login-box">
+        <h2>Owner Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="ownerLogin()">Login</button>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="mainDashboard">
+
+<div class="header">
+    <div class="logo">
+        <img src="logo.png">
+        <div>Millets Enterprise - Owner Dashboard</div>
+    </div>
+    <div>
+        <button onclick="clearAll()">Clear Orders</button>
+        <button onclick="ownerLogout()">Logout</button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="summary" id="summaryBox"></div>
+    <div id="dashboard"></div>
+</div>
+
+</div>
+
+<script>
+
+const OWNER_USERNAME="admin";
+const OWNER_PASSWORD="admin123";
+
+window.onload=function(){
+    if(localStorage.getItem("ownerLoggedIn")==="true"){
+        showDashboard();
+    }
+};
+
+function ownerLogin(){
+    let u=document.getElementById("username").value;
+    let p=document.getElementById("password").value;
+
+    if(u===OWNER_USERNAME && p===OWNER_PASSWORD){
+        localStorage.setItem("ownerLoggedIn","true");
+        showDashboard();
+    }else{
+        alert("Invalid Login");
+    }
+}
+
+function showDashboard(){
+    document.getElementById("loginPage").style.display="none";
+    document.getElementById("mainDashboard").style.display="block";
+    loadOrders();
+}
+
+function ownerLogout(){
+    localStorage.removeItem("ownerLoggedIn");
+    location.reload();
+}
+
+function loadOrders(){
+
+    let orders=JSON.parse(localStorage.getItem("orders"))||[];
+    const dashboard=document.getElementById("dashboard");
+    const summaryBox=document.getElementById("summaryBox");
+    dashboard.innerHTML="";
+
+    if(orders.length===0){
+        summaryBox.innerHTML="Total Revenue: ₹0";
+        dashboard.innerHTML="<div class='no-data'>No Orders Found</div>";
+        return;
+    }
+
+    let totalRevenue=0;
+
+    orders.forEach((order,index)=>{
+
+        totalRevenue+=parseInt(order.totalPrice);
+
+        if(!order.status){
+            order.status="Pending";
+        }
+
+        let statusClass=order.status.toLowerCase();
+
+        let card=document.createElement("div");
+        card.className="card";
+
+        card.innerHTML=`
+            <h3>${order.name}</h3>
+            <p><strong>Phone:</strong> ${order.phone}</p>
+            <p><strong>Address:</strong> ${order.address}, ${order.city}, ${order.state} - ${order.pincode}</p>
+
+            <table>
+                <tr>
+                    <th>Product</th>
+                    <th>KG</th>
+                    <th>Total (₹)</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+                <tr>
+                    <td>${order.product}</td>
+                    <td>${order.kg}</td>
+                    <td>${order.totalPrice}</td>
+                    <td class="status ${statusClass}">
+                        ${order.status}
+                        ${order.deliveryDate ? "<br><small>Delivery Date: "+order.deliveryDate+"</small>" : ""}
+                    </td>
+                    <td>
+                        <select onchange="changeStatus(this.value, ${index})">
+                            <option value="">Select</option>
+                            <option value="Accepted">Order Accepted</option>
+                            <option value="Shipped">Order Shipped</option>
+                            <option value="Delivered">Order Delivered</option>
+                        </select>
+
+                        <div id="dateBox${index}" class="date-input" style="display:none;">
+                            <input type="date" onchange="setDeliveryDate(this.value, ${index})">
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="total">Order Total: ₹${order.totalPrice}</div>
+        `;
+
+        dashboard.appendChild(card);
+    });
+
+    summaryBox.innerHTML="Total Revenue: ₹"+totalRevenue;
+    localStorage.setItem("orders",JSON.stringify(orders));
+}
+
+/* ONLY CHANGE ADDED HERE */
+function changeStatus(status,index){
+
+    let orders=JSON.parse(localStorage.getItem("orders"))||[];
+
+    if(status==="Accepted"){
+        document.getElementById("dateBox"+index).style.display="block";
+        return;
+    }
+
+    orders[index].status=status;
+    localStorage.setItem("orders",JSON.stringify(orders));
+    loadOrders();
+}
+
+/* SAVE DELIVERY DATE WHEN ACCEPTED */
+function setDeliveryDate(date,index){
+
+    let orders=JSON.parse(localStorage.getItem("orders"))||[];
+
+    if(date){
+        orders[index].status="Accepted";
+        orders[index].deliveryDate=date;
+        localStorage.setItem("orders",JSON.stringify(orders));
+        loadOrders();
+    }
+}
+
+function clearAll(){
+    if(confirm("Delete all orders?")){
+        localStorage.removeItem("orders");
+        loadOrders();
+    }
+}
+
+</script>
+
+</body>
+</html>
