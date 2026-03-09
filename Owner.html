@@ -221,10 +221,6 @@ color:#777;
 
 <body>
 
-<audio id="orderSound" src="bell.mp3"></audio>
-
-<!-- LIVE ORDER POPUP -->
-
 <div id="livePopup" class="live-popup">
 
 <div class="popup-title">
@@ -236,7 +232,7 @@ New Order Received
 
 </div>
 
-<!-- LOGIN PAGE -->
+<!-- LOGIN -->
 
 <div id="loginPage">
 <div class="login-box">
@@ -247,12 +243,14 @@ New Order Received
 </div>
 </div>
 
+<!-- DASHBOARD -->
+
 <div id="mainDashboard">
 
 <div class="header">
 
 <div class="logo">
-<img src="logo.PNG">
+<img src="logo.png">
 <div>Millets Enterprise - Owner Dashboard</div>
 </div>
 
@@ -286,14 +284,12 @@ const OWNER_PASSWORD="admin123";
 let lastOrderCount=0;
 let notificationCount=0;
 
-window.onload=function(){
+/* 🔔 SOUND FILE */
 
-if(localStorage.getItem("ownerLoggedIn")==="true"){
-showDashboard();
-}
+let bellSound=new Audio("Bell.mp3");
+bellSound.preload="auto";
 
-setInterval(checkNewOrders,3000);
-};
+/* LOGIN */
 
 function ownerLogin(){
 
@@ -301,12 +297,36 @@ let u=document.getElementById("username").value;
 let p=document.getElementById("password").value;
 
 if(u===OWNER_USERNAME && p===OWNER_PASSWORD){
+
 localStorage.setItem("ownerLoggedIn","true");
+
+/* enable audio */
+bellSound.play().then(()=>{
+bellSound.pause();
+bellSound.currentTime=0;
+}).catch(()=>{});
+
 showDashboard();
+
 }else{
 alert("Invalid Login");
 }
+
 }
+
+/* PAGE LOAD */
+
+window.onload=function(){
+
+if(localStorage.getItem("ownerLoggedIn")==="true"){
+showDashboard();
+}
+
+setInterval(checkNewOrders,3000);
+
+};
+
+/* DASHBOARD */
 
 function showDashboard(){
 
@@ -314,9 +334,19 @@ document.getElementById("loginPage").style.display="none";
 document.getElementById("mainDashboard").style.display="block";
 
 loadOrders();
+
 }
 
-/* CHECK NEW ORDER */
+/* PLAY BELL */
+
+function playBell(){
+
+bellSound.currentTime=0;
+bellSound.play().catch(()=>{});
+
+}
+
+/* CHECK ORDERS */
 
 function checkNewOrders(){
 
@@ -324,22 +354,25 @@ let orders=JSON.parse(localStorage.getItem("orders"))||[];
 
 if(orders.length>lastOrderCount){
 
-document.getElementById("orderSound").play();
+playBell();
 
 let newOrder=orders[orders.length-1];
 
 showLivePopup(newOrder);
 
 notificationCount++;
+
 updateBell();
 
 lastOrderCount=orders.length;
 
 loadOrders();
-}
+
 }
 
-/* LIVE POPUP */
+}
+
+/* POPUP */
 
 function showLivePopup(order){
 
@@ -356,20 +389,23 @@ popup.classList.add("show");
 setTimeout(()=>{
 popup.classList.remove("show");
 },6000);
+
 }
 
 function closePopup(){
 document.getElementById("livePopup").classList.remove("show");
 }
 
-/* BELL */
+/* BELL COUNT */
 
 function updateBell(){
 
 let badge=document.getElementById("bellCount");
 
 badge.style.display="block";
+
 badge.innerText=notificationCount;
+
 }
 
 /* LOAD ORDERS */
@@ -384,9 +420,11 @@ const summaryBox=document.getElementById("summaryBox");
 dashboard.innerHTML="";
 
 if(orders.length===0){
+
 summaryBox.innerHTML="Total Revenue: ₹0";
 dashboard.innerHTML="<div class='no-data'>No Orders Found</div>";
 return;
+
 }
 
 let totalRevenue=0;
@@ -402,6 +440,7 @@ order.status="Pending";
 let statusClass=order.status.toLowerCase();
 
 let card=document.createElement("div");
+
 card.className="card";
 
 card.innerHTML=`
@@ -429,7 +468,6 @@ card.innerHTML=`
 
 <td class="status ${statusClass}">
 ${order.status}
-${order.deliveryDate ? "<br><small>Delivery: "+order.deliveryDate+"</small>" : ""}
 </td>
 
 <td>
@@ -464,6 +502,7 @@ dashboard.appendChild(card);
 summaryBox.innerHTML="Total Revenue: ₹"+totalRevenue;
 
 localStorage.setItem("orders",JSON.stringify(orders));
+
 }
 
 /* STATUS */
@@ -477,6 +516,7 @@ orders[index].status=status;
 localStorage.setItem("orders",JSON.stringify(orders));
 
 loadOrders();
+
 }
 
 /* PRINT */
@@ -502,6 +542,7 @@ let win=window.open("");
 win.document.write(content);
 
 win.print();
+
 }
 
 /* CLEAR */
@@ -509,9 +550,13 @@ win.print();
 function clearAll(){
 
 if(confirm("Delete all orders?")){
+
 localStorage.removeItem("orders");
+
 loadOrders();
+
 }
+
 }
 
 /* EXCEL */
@@ -527,10 +572,10 @@ let book=XLSX.utils.book_new();
 XLSX.utils.book_append_sheet(book,sheet,"Orders");
 
 XLSX.writeFile(book,"Millets_Orders.xlsx");
+
 }
 
 </script>
 
 </body>
 </html>
-
