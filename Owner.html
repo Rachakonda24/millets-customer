@@ -197,6 +197,7 @@ text-align:center;
 .accepted{color:blue;}
 .shipped{color:#6a1b9a;}
 .delivered{color:green;}
+.cancelled{color:red;}
 
 select{
 padding:6px;
@@ -284,7 +285,7 @@ const OWNER_PASSWORD="admin123";
 let lastOrderCount=0;
 let notificationCount=0;
 
-/* 🔔 SOUND FILE */
+/* SOUND */
 
 let bellSound=new Audio("Bell.mp3");
 bellSound.preload="auto";
@@ -300,7 +301,6 @@ if(u===OWNER_USERNAME && p===OWNER_PASSWORD){
 
 localStorage.setItem("ownerLoggedIn","true");
 
-/* enable audio */
 bellSound.play().then(()=>{
 bellSound.pause();
 bellSound.currentTime=0;
@@ -337,7 +337,7 @@ loadOrders();
 
 }
 
-/* PLAY BELL */
+/* BELL */
 
 function playBell(){
 
@@ -346,7 +346,7 @@ bellSound.play().catch(()=>{});
 
 }
 
-/* CHECK ORDERS */
+/* CHECK NEW ORDERS */
 
 function checkNewOrders(){
 
@@ -478,6 +478,7 @@ ${order.status}
 <option value="Accepted">Accepted</option>
 <option value="Shipped">Shipped</option>
 <option value="Delivered">Delivered</option>
+<option value="Cancelled">Cancelled</option>
 
 </select>
 
@@ -505,11 +506,19 @@ localStorage.setItem("orders",JSON.stringify(orders));
 
 }
 
-/* STATUS */
+/* STATUS CHANGE */
 
 function changeStatus(status,index){
 
 let orders=JSON.parse(localStorage.getItem("orders"))||[];
+
+if(status==="Cancelled"){
+
+if(!confirm("Are you sure you want to cancel this order?")){
+return;
+}
+
+}
 
 orders[index].status=status;
 
@@ -575,8 +584,17 @@ XLSX.writeFile(book,"Millets_Orders.xlsx");
 
 }
 
+/* LOGOUT */
+
+function ownerLogout(){
+
+localStorage.removeItem("ownerLoggedIn");
+
+location.reload();
+
+}
+
 </script>
 
 </body>
 </html>
-
