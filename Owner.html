@@ -6,6 +6,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
+<!-- QR + BARCODE LIBRARIES -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode/dist/JsBarcode.all.min.js"></script>
+
 <style>
 body{
 margin:0;
@@ -217,10 +221,60 @@ font-size:20px;
 margin-top:100px;
 color:#777;
 }
+
+/* SHIPPING LABEL POPUP */
+
+#labelPopup{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
+justify-content:center;
+align-items:center;
+z-index:9999;
+}
+
+.label-box{
+background:white;
+padding:20px;
+width:420px;
+border-radius:8px;
+text-align:center;
+}
+
 </style>
 </head>
 
 <body>
+
+<!-- SHIPPING LABEL POPUP -->
+
+<div id="labelPopup">
+
+<div class="label-box">
+
+<h2>Millets Enterprise</h2>
+<hr>
+
+<div id="labelContent"></div>
+
+<div id="qrBox"></div>
+
+<br>
+
+<svg id="barcodeBox"></svg>
+
+<br><br>
+
+<button onclick="window.print()">Print</button>
+<button onclick="closeLabel()">Close</button>
+
+</div>
+
+</div>
 
 <div id="livePopup" class="live-popup">
 
@@ -285,8 +339,6 @@ const OWNER_PASSWORD="admin123";
 let lastOrderCount=0;
 let notificationCount=0;
 
-/* SOUND */
-
 let bellSound=new Audio("Bell.mp3");
 bellSound.preload="auto";
 
@@ -301,11 +353,6 @@ if(u===OWNER_USERNAME && p===OWNER_PASSWORD){
 
 localStorage.setItem("ownerLoggedIn","true");
 
-bellSound.play().then(()=>{
-bellSound.pause();
-bellSound.currentTime=0;
-}).catch(()=>{});
-
 showDashboard();
 
 }else{
@@ -313,8 +360,6 @@ alert("Invalid Login");
 }
 
 }
-
-/* PAGE LOAD */
 
 window.onload=function(){
 
@@ -337,15 +382,6 @@ loadOrders();
 
 }
 
-/* BELL */
-
-function playBell(){
-
-bellSound.currentTime=0;
-bellSound.play().catch(()=>{});
-
-}
-
 /* CHECK NEW ORDERS */
 
 function checkNewOrders(){
@@ -353,8 +389,6 @@ function checkNewOrders(){
 let orders=JSON.parse(localStorage.getItem("orders"))||[];
 
 if(orders.length>lastOrderCount){
-
-playBell();
 
 let newOrder=orders[orders.length-1];
 
@@ -371,8 +405,6 @@ loadOrders();
 }
 
 }
-
-/* POPUP */
 
 function showLivePopup(order){
 
@@ -394,18 +426,6 @@ popup.classList.remove("show");
 
 function closePopup(){
 document.getElementById("livePopup").classList.remove("show");
-}
-
-/* BELL COUNT */
-
-function updateBell(){
-
-let badge=document.getElementById("bellCount");
-
-badge.style.display="block";
-
-badge.innerText=notificationCount;
-
 }
 
 /* LOAD ORDERS */
@@ -486,6 +506,8 @@ ${order.status}
 
 <button onclick="printOrder(${index})">Print</button>
 
+<button onclick="printLabel(${index})">Shipping Label</button>
+
 </td>
 
 </tr>
@@ -502,11 +524,9 @@ dashboard.appendChild(card);
 
 summaryBox.innerHTML="Total Revenue: ₹"+totalRevenue;
 
-localStorage.setItem("orders",JSON.stringify(orders));
-
 }
 
-/* STATUS CHANGE */
+/* STATUS */
 
 function changeStatus(status,index){
 
@@ -525,6 +545,46 @@ orders[index].status=status;
 localStorage.setItem("orders",JSON.stringify(orders));
 
 loadOrders();
+
+}
+
+/* SHIPPING LABEL */
+
+function printLabel(index){
+
+let orders=JSON.parse(localStorage.getItem("orders"))||[];
+
+let order=orders[index];
+
+document.getElementById("labelContent").innerHTML=`
+
+Customer: ${order.name}<br>
+Phone: ${order.phone}<br>
+Product: ${order.product}<br>
+Quantity: ${order.kg} KG<br>
+Address: ${order.address}, ${order.city}, ${order.state} - ${order.pincode}
+
+`;
+
+document.getElementById("qrBox").innerHTML="";
+
+QRCode.toCanvas(order.phone,function(err,canvas){
+
+document.getElementById("qrBox").appendChild(canvas);
+
+});
+
+JsBarcode("#barcodeBox",order.phone,{
+format:"CODE128"
+});
+
+document.getElementById("labelPopup").style.display="flex";
+
+}
+
+function closeLabel(){
+
+document.getElementById("labelPopup").style.display="none";
 
 }
 
